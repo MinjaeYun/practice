@@ -1,2 +1,2 @@
 # practice
-# "IntroPython" is created by Dr. Jung
+# "IntroPython.ipynb" is created by Dr. Jung
