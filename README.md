@@ -1,1 +1,1 @@
-# "IntroPython.ipynb" is created by Dr. Jung
+PhD in Economics at CGU
