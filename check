@@ -1,10 +1,10 @@
 * check difference between baconddtiming and ddtiming (Stata packages)
-program define ddtiming, eclass sortpreserve
-  version 13
+program define baconddtiming, eclass sortpreserve
+  version 11.2
   
   syntax varlist(min=2 max=2 numeric) [if], [i(varname numeric) ///
     t(varname numeric) Msymbols(string) MColors(string) MSIZes(string) ///
-    DDLine(string) noLine SAVEGraph(string) SAVEData(string) replace *]
+    DDLine(string) noLine stub(string) replace *]
   
   * Perform checks
   if "`i'" == "" {
@@ -121,7 +121,7 @@ program define ddtiming, eclass sortpreserve
   forval k = 1/`= rowsof(`tr_grps')' {
     local l = `k' + 1
     while `l' <= `= rowsof(`tr_grps')' {
-	  mat `tmp' = `tr_samp_share'[`k',1] * `tr_samp_share'[`l',1] * (`tr_share'[`k',1] - `tr_share'[`l',1]) * (1 - (`tr_share'[`k',1] - `tr_share'[`l',1]))
+
       mat `sigma_term2' = nullmat(`sigma_term2')\\`tmp'
       local ++l
     }
@@ -142,9 +142,9 @@ program define ddtiming, eclass sortpreserve
       mat `tmp' = `k',0,((`tr_samp_share'[`k',1] * `untr_samp_share'[1,1] * `tr_share'[`k',1] * (1 - `tr_share'[`k',1])) / `sigma'[1,1]),3
       mat `wt_untr' = nullmat(`wt_untr')\\`tmp'
     }
-	mata : st_matrix("`wt_untr_tot'", colsum(st_matrix("`wt_untr'")[1...,3]))
-	mata : st_matrix("`tmp'", st_matrix("`wt_untr'")[1...,3] / st_matrix("`wt_untr_tot'"))
-	mat `wt_untr' = `wt_untr',`tmp'  // Columns: treatment group, comparison group, weight, comparison type, weight scaled to 1
+
+
+
   }
   
   * Weights where comparison group is untreated (already treated)
@@ -153,9 +153,9 @@ program define ddtiming, eclass sortpreserve
       mat `tmp' = `k',0,((`tr_samp_share'[`k',1] * `contr_samp_share'[1,1] * `tr_share'[`k',1] * (1 - `tr_share'[`k',1])) / `sigma'[1,1]),4
       mat `wt_contr' = nullmat(`wt_contr')\\`tmp'
     }
-	mata : st_matrix("`wt_contr_tot'", colsum(st_matrix("`wt_contr'")[1...,3]))
-	mata : st_matrix("`tmp'", st_matrix("`wt_contr'")[1...,3] / st_matrix("`wt_contr_tot'"))
-	mat `wt_contr' = `wt_contr',`tmp'
+
+
+
   }
   
   * Weights where comparison group is ever treated
@@ -168,8 +168,8 @@ program define ddtiming, eclass sortpreserve
       mat `tmp_s_mu' = `k',`l',(`tmp_s' * `tmp_mu'),1
       mat `tmp_s_1mu' = `l',`k',(`tmp_s' * (1 - `tmp_mu')),2
       
-      mat `wt_tr_e' = nullmat(`wt_tr_e')\\`tmp_s_mu'   // e = Treatment's treatment earlier than comparison's treatment
-      mat `wt_tr_l' = nullmat(`wt_tr_l')\\`tmp_s_1mu'  // l = Treatment's treatment later than comparison's treatment
+      mat `wt_tr_e' = nullmat(`wt_tr_e')\\`tmp_s_mu'   // e = Treatment's treatment earlier than control's treatment
+      mat `wt_tr_l' = nullmat(`wt_tr_l')\\`tmp_s_1mu'  // l = Treatment's treatment later than control's treatment
       
       local ++l
     }
@@ -179,7 +179,7 @@ program define ddtiming, eclass sortpreserve
   
   mata : st_matrix("`wt_tr_e_tot'", colsum(st_matrix("`wt_tr_e'")[1...,3]))
   mata : st_matrix("`tmp'", st_matrix("`wt_tr_e'")[1...,3] / st_matrix("`wt_tr_e_tot'"))
-  mat `wt_tr_e' = `wt_tr_e',`tmp'  // Columns: treatment group, comparison group, weight, comparison type, weight scaled to 1
+  mat `wt_tr_e' = `wt_tr_e',`tmp'  // Columns: treatment group, control group, weight, comparison type, weight scaled to 1
 
   mata : st_matrix("`wt_tr_l_tot'", colsum(st_matrix("`wt_tr_l'")[1...,3]))
   mata : st_matrix("`tmp'", st_matrix("`wt_tr_l'")[1...,3] / st_matrix("`wt_tr_l_tot'"))
@@ -197,8 +197,8 @@ program define ddtiming, eclass sortpreserve
       areg `y' `tr' i.`i' if (`tr_never' == 1 | `tr_time' == `tr_grps'[`k',1]) & `touse', a(`t')
       mat `tmp' = `tmp',_b[`tr'] 
       mat `dd_untr_est' = nullmat(`dd_untr_est')\\`tmp'
-     // Columns: (1) treatment group (2) comparison group (3) treatment's treatment time
-     //  (cont.) (4) comparison's treatment time (5) start time (6) end time
+     // Columns: (1) treatment group (2) control group (3) treatment's treatment time
+     //  (cont.) (4) control's treatment time (5) start time (6) end time
      //  (cont.) (7) comparison category (8) diff-in-diff estimate
     }
   }
@@ -222,14 +222,14 @@ program define ddtiming, eclass sortpreserve
     // Columns: (1) time lower bound (2) time upper bound
   }
   forvalues k = 1/`= rowsof(`tr_grps')' {           // Treatment index
-    forvalues l = 1/`= rowsof(`tr_grps')' {         // Comparison index
+    forvalues l = 1/`= rowsof(`tr_grps')' {         // Control index
       if `k' != `l' {
         mat `tmp' = `k',`l',`tr_grps'[`k',1],`tr_grps'[`l',1]
         
-        if `tmp'[1,3] < `tmp'[1,4] {                // If treatment's treatment time < comparison's treatment time
-          mat `tmp' = `tmp',`lrange'[`l',1...],1    // ... use range below comparison's treatment time
+        if `tmp'[1,3] < `tmp'[1,4] {                // If treatment's treatment time < control's treatment time
+          mat `tmp' = `tmp',`lrange'[`l',1...],1    // ... use range below control's treatment time
         }
-        else mat `tmp' = `tmp',`urange'[`l',1...],2 // ... else use range above comparison's treatment time
+        else mat `tmp' = `tmp',`urange'[`l',1...],2 // ... else use range above control's treatment time
         
         if `k' < `l' mat `dd_e' = nullmat(`dd_e')\\`tmp'
         else mat `dd_l' = nullmat(`dd_l')\\`tmp'
@@ -304,8 +304,8 @@ program define ddtiming, eclass sortpreserve
   }
   
   * Define labels
-  local legend1 `"lab(1 "Earlier Group Treatment vs. Later Group Comparison")"'
-  local legend2 `"lab(2 "Later Group Treatment vs. Earlier Group Comparison")"'
+  local legend1 `"lab(1 "Earlier Group Treatment vs. Later Group Control")"'
+  local legend2 `"lab(2 "Later Group Treatment vs. Earlier Group Control")"'
   
   if `untr' == 1 local legend3 `"lab(3 "Treatment vs. Never Treated")"'
   
@@ -362,8 +362,8 @@ program define ddtiming, eclass sortpreserve
 
   local graphcmd tw `scatter1' `scatter2' `scatter3' `scatter4', ///
     xlabel(,format(%5.2f)) ytitle("2x2 DD Estimate") xtitle("Weight") ///
-	`yline' graphregion(color(white)) legend(col(1) `legend_order' ///
-	`legend1' `legend2' `legend3' `legend4') `options'
+
+
   `graphcmd'
   
   local graphsave tw (scatter dd_est dd_wt if dd_type == 1) ///
@@ -374,7 +374,7 @@ program define ddtiming, eclass sortpreserve
   
   local graphsave_opts xlabel(,format(%5.2f)) ytitle("2x2 DD Estimate") xtitle("Weight") ///
     `yline' graphregion(color(white)) legend(col(1) `legend_order' ///
-	`legend1' `legend2' `legend3' `legend4') `options'
+
   
   * Save graph
   if `"`savegraph'"' != "" {
@@ -418,8 +418,32 @@ program define ddtiming, eclass sortpreserve
     di as smcl as txt "T vs. Already treated       " as res %5.3f `wt_contr_tot'[1,1] "       " as res %9.3f `contr_est_avg'[1,1]
   }
   di as smcl as txt "{hline 49}"
-  di as smcl as txt "T = Treatment; C = Comparison"
+  di as smcl as txt "T = Treatment; C = Control"
 
+  * Save data
+  if "`stub'" != "" {
+    * "dd_est,weight,weight_rescale,time_lower,time_upper,dd_type" columns
+    foreach v in dd_est,weight,weight_rescale,time_lower,time_upper,dd_type {
+     g `stub'`v'=.
+     }
+    forvalues k = 1/`= rowsof(`dd_est')' {
+     replace `stub'dd_est = (`dd_est'[`k',8]) in `k'
+     replace `stub'weight = (`dd_wt'[`k',3]) in `k' 
+     replace `stub'weight_rescale = (`dd_wt'[`k',5]) 
+     replace `stub'time_lower = (`dd_est'[`k',5]) 
+     replace `stub'time_upper =  (`dd_est'[`k',6]) 
+     replace `stub'dd_type =  (`dd_est'[`k',7]) 
+     }
+    label var `stub'dd_est "2x2 DD estimate"
+    label var `stub'weight "2x2 DD weight"
+    label var `stub'weight_rescale "2x2 DD weight rescaled within comparison type"
+    label var `stub'time_lower "2x2 DD time lower bound"
+    label var `stub'time_upper "2x2 DD time upper bound"
+    label var `stub'dd_type "2x2 DD type"
+    label define `stub'dd_type 1 "Earlier T vs. Later C" 2 "Later T vs. Earlier C" 3 "T vs. Never T" 4 "T vs. Already T"
+    label values `stub'dd_type `stub'dd_type
+    }
+  
   * Save data
   if "`savedata'" != "" {
     file open `savedatafile' using `"`savedata'.csv"', write text `replace'
@@ -439,15 +463,15 @@ program define ddtiming, eclass sortpreserve
     
     file write `savedatafile' `"label var dd_est "2x2 DD estimate""' _n
     file write `savedatafile' `"label var weight "2x2 DD weight""' _n
-	file write `savedatafile' `"label var weight_rescale "2x2 DD weight rescaled within comparison type""' _n
+
     file write `savedatafile' `"label var time_lower "2x2 DD time lower bound""' _n
     file write `savedatafile' `"label var time_upper "2x2 DD time upper bound""' _n
     file write `savedatafile' `"label var dd_type "2x2 DD types""' _n _n
     file write `savedatafile' `"label define dd_type 1 "Earlier T vs. Later C" 2 "Later T vs. Earlier C" 3 "T vs. Never T" 4 "T vs. Already T""' _n
     file write `savedatafile' `"label values dd_type dd_type"' _n _n
 
-	file write `savedatafile' `"`graphsave'"' `"`graphsave_opts'"' _n
-	
+
+
     file close `savedatafile'
     di as smcl as txt `"File `savedata'.do written containing commands to process saved data"'
 
