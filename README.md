@@ -1,4 +1,4 @@
-# Web Scraping for Social Sciences
+# Data Analysis for the Social Sciences
 
 ## Logistics
 
@@ -35,7 +35,6 @@ For each week, a set of required problem sets are assigned. Supplementary readin
     <li> <a href="#M9">Advanced Web Scraping</a>
     <li> <a href="#M10">Creating an Interactive Webpage for a Descriptive Analysis</a>
   </ol>
-<a href="http://jakevdp.github.io/PythonDataScienceHandbook/">Text Book for Programming</a>
     
 ### <h2 id="M1">1. Setting Up and Basics</h2>
 Why do people care to learn computer programming? How can programming help humans do better? In this module, we will grasp the gist of it and learn the basic syntax of Python. <br>
