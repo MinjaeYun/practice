@@ -3,8 +3,8 @@
 ## Logistics
 
   Course: <br>
-  Next offered: Fall Semester 2022 <br>
-  Credit: 4 credits, graded <br>
+  Next offered: <br>
+  Credit:  <br>
   Enrollment: To be determined <br>
   Instructors: Minjae Yun <br>
 
